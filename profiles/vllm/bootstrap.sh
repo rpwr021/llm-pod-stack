@@ -20,7 +20,9 @@ if ! "$POD_PYTHON" -c 'import vllm' >/dev/null 2>&1 || [[ "$REINSTALL_TORCH" == 
   # GPU pod images normally provide CUDA Torch/Jupyter already. Reuse that
   # runtime rather than making a second, multi-GB Torch virtual environment.
   reinstall_args=()
-  [[ "$REINSTALL_TORCH" == 1 ]] && reinstall_args=(--reinstall-package torch)
+  # vLLM imports TorchAudio during startup.  Reinstall the matching CUDA wheel
+  # alongside Torch so a prior base-image CUDA wheel cannot prevent launch.
+  [[ "$REINSTALL_TORCH" == 1 ]] && reinstall_args=(--reinstall-package torch --reinstall-package torchaudio --reinstall-package torchvision)
   UV_CACHE_DIR="$UV_CACHE_DIR" uv pip install --python "$POD_PYTHON" --system \
     --break-system-packages "${reinstall_args[@]}" vllm --torch-backend "$TORCH_BACKEND"
 fi
