@@ -10,7 +10,7 @@ PORT="${PORT:-30000}"
 POD_PYTHON="${POD_PYTHON:-$(command -v python3)}"
 MEM_FRACTION_STATIC="${MEM_FRACTION_STATIC:-0.85}"
 CHUNKED_PREFILL_SIZE="${CHUNKED_PREFILL_SIZE:-2048}"
-ENABLE_MTP="${ENABLE_MTP:-1}"
+ENABLE_MTP="${ENABLE_MTP:-0}"
 
 command -v uv >/dev/null 2>&1 || curl -LsSf https://astral.sh/uv/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
@@ -39,7 +39,6 @@ exec "$POD_PYTHON" -m sglang.launch_server \\
   --attention-backend flashinfer \\
   --chunked-prefill-size "$CHUNKED_PREFILL_SIZE" \\
   --reasoning-parser qwen3 --tool-call-parser qwen3_coder \\
-  --mamba-radix-cache-strategy extra_buffer_lazy \\
   "\${SPEC_ARGS[@]}"
 EOF
 chmod 700 "$STACK_DIR/start.sh"
