@@ -14,6 +14,7 @@ PORT="${PORT:-8000}"
 SPEC_TOKENS="${SPEC_TOKENS:-1}"
 GPU_MEMORY_UTILIZATION="${GPU_MEMORY_UTILIZATION:-0.75}"
 MAX_MODEL_LEN="${MAX_MODEL_LEN:-8192}"
+MAX_CUDAGRAPH_CAPTURE_SIZE="${MAX_CUDAGRAPH_CAPTURE_SIZE:-32}"
 POD_PYTHON="${POD_PYTHON:-$(command -v python3)}"
 TORCH_BACKEND="${TORCH_BACKEND:-cu129}"
 REINSTALL_TORCH="${REINSTALL_TORCH:-0}"
@@ -52,6 +53,7 @@ done
 exec "$VLLM_BIN" serve "$MODEL" \\
   --host 127.0.0.1 --port "$PORT" \\
   --gpu-memory-utilization "$GPU_MEMORY_UTILIZATION" --max-model-len "$MAX_MODEL_LEN" \\
+  --max-cudagraph-capture-size "$MAX_CUDAGRAPH_CAPTURE_SIZE" \\
   --kv-cache-dtype fp8 --enable-prefix-caching \\
   --speculative-config '{"method":"mtp","num_speculative_tokens":$SPEC_TOKENS}'
 EOF
