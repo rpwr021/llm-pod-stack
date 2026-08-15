@@ -10,7 +10,7 @@ HF_XET_CACHE="${HF_XET_CACHE:-/tmp/hf-xet}"
 PORT="${PORT:-8000}"
 SPEC_TOKENS="${SPEC_TOKENS:-1}"
 POD_PYTHON="${POD_PYTHON:-$(command -v python3)}"
-TORCH_BACKEND="${TORCH_BACKEND:-cu132}"
+TORCH_BACKEND="${TORCH_BACKEND:-cu129}"
 REINSTALL_TORCH="${REINSTALL_TORCH:-0}"
 
 command -v uv >/dev/null 2>&1 || curl -LsSf https://astral.sh/uv/install.sh | sh
