@@ -10,15 +10,17 @@ HF_XET_CACHE="${HF_XET_CACHE:-/tmp/hf-xet}"
 PORT="${PORT:-8000}"
 SPEC_TOKENS="${SPEC_TOKENS:-1}"
 POD_PYTHON="${POD_PYTHON:-$(command -v python3)}"
+TORCH_BACKEND="${TORCH_BACKEND:-cu132}"
+REINSTALL_TORCH="${REINSTALL_TORCH:-0}"
 
 command -v uv >/dev/null 2>&1 || curl -LsSf https://astral.sh/uv/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
 mkdir -p "$STACK_DIR" "$UV_CACHE_DIR" "$HF_XET_CACHE"
-if ! "$POD_PYTHON" -c 'import vllm' >/dev/null 2>&1; then
+if ! "$POD_PYTHON" -c 'import vllm' >/dev/null 2>&1 || [[ "$REINSTALL_TORCH" == 1 ]]; then
   # GPU pod images normally provide CUDA Torch/Jupyter already. Reuse that
   # runtime rather than making a second, multi-GB Torch virtual environment.
   UV_CACHE_DIR="$UV_CACHE_DIR" uv pip install --python "$POD_PYTHON" --system \
-    --break-system-packages vllm --torch-backend auto
+    --break-system-packages vllm --torch-backend "$TORCH_BACKEND"
 fi
 VLLM_BIN="${VLLM_BIN:-$(command -v vllm || true)}"
 [[ -n "$VLLM_BIN" ]] || { echo "vLLM executable was not installed" >&2; exit 1; }
