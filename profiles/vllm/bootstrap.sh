@@ -19,8 +19,10 @@ mkdir -p "$STACK_DIR" "$UV_CACHE_DIR" "$HF_XET_CACHE"
 if ! "$POD_PYTHON" -c 'import vllm' >/dev/null 2>&1 || [[ "$REINSTALL_TORCH" == 1 ]]; then
   # GPU pod images normally provide CUDA Torch/Jupyter already. Reuse that
   # runtime rather than making a second, multi-GB Torch virtual environment.
+  reinstall_args=()
+  [[ "$REINSTALL_TORCH" == 1 ]] && reinstall_args=(--reinstall-package torch)
   UV_CACHE_DIR="$UV_CACHE_DIR" uv pip install --python "$POD_PYTHON" --system \
-    --break-system-packages vllm --torch-backend "$TORCH_BACKEND"
+    --break-system-packages "${reinstall_args[@]}" vllm --torch-backend "$TORCH_BACKEND"
 fi
 VLLM_BIN="${VLLM_BIN:-$(command -v vllm || true)}"
 [[ -n "$VLLM_BIN" ]] || { echo "vLLM executable was not installed" >&2; exit 1; }
