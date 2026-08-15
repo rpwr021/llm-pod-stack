@@ -19,6 +19,10 @@ if ! "$POD_PYTHON" -c 'import sglang' >/dev/null 2>&1; then
   UV_CACHE_DIR="$UV_CACHE_DIR" uv pip install --python "$POD_PYTHON" --system \
     --break-system-packages sglang
 fi
+# SGLang rejects the PyTorch 2.9.1 / CuDNN < 9.15 combination because Conv3d
+# can exhibit severe performance and memory regressions. Use its required fix.
+UV_CACHE_DIR="$UV_CACHE_DIR" uv pip install --python "$POD_PYTHON" --system \
+  --break-system-packages 'nvidia-cudnn-cu12==9.16.0.29'
 
 cat >"$STACK_DIR/start.sh" <<EOF
 #!/usr/bin/env bash
