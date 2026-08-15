@@ -38,6 +38,9 @@ set -euo pipefail
 export HF_XET_HIGH_PERFORMANCE=1
 export HF_HOME="$HF_HOME"
 export HF_XET_CACHE="$HF_XET_CACHE"
+# FlashInfer 0.6.x misdetects Blackwell SM120 during sampler JIT.  Native
+# PyTorch sampling avoids that startup crash; NVFP4 model kernels remain used.
+export VLLM_USE_FLASHINFER_SAMPLER=0
 # uv distributes the CUDA runtime across package-specific directories. Pod
 # images can otherwise resolve an older system NVRTC first (which lacks SM120
 # support on RTX 50-series GPUs), so put every matching wheel directory first.
