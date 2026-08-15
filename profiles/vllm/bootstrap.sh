@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Experimental CUDA vLLM profile. Requires an explicit Hugging Face model ID or local path.
+set -euo pipefail
+
+MODEL="${MODEL:-unsloth/Qwen3.8-27B-NVFP4}"
+WORKSPACE="${WORKSPACE:-/workspace}"
+STACK_DIR="${STACK_DIR:-$WORKSPACE/vllm-stack}"
+UV_CACHE_DIR="${UV_CACHE_DIR:-/tmp/uv-cache}"
+HF_XET_CACHE="${HF_XET_CACHE:-/tmp/hf-xet}"
+PORT="${PORT:-8000}"
+SPEC_TOKENS="${SPEC_TOKENS:-1}"
+POD_PYTHON="${POD_PYTHON:-$(command -v python3)}"
+
+command -v uv >/dev/null 2>&1 || curl -LsSf https://astral.sh/uv/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"
+mkdir -p "$STACK_DIR" "$UV_CACHE_DIR" "$HF_XET_CACHE"
+if ! "$POD_PYTHON" -c 'import vllm' >/dev/null 2>&1; then
+  # GPU pod images normally provide CUDA Torch/Jupyter already. Reuse that
+  # runtime rather than making a second, multi-GB Torch virtual environment.
+  UV_CACHE_DIR="$UV_CACHE_DIR" uv pip install --python "$POD_PYTHON" --system \
+    --break-system-packages vllm --torch-backend auto
+fi
+VLLM_BIN="${VLLM_BIN:-$(command -v vllm || true)}"
+[[ -n "$VLLM_BIN" ]] || { echo "vLLM executable was not installed" >&2; exit 1; }
+
+cat >"$STACK_DIR/start.sh" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+export HF_XET_HIGH_PERFORMANCE=1
+export HF_XET_CACHE="$HF_XET_CACHE"
+# Recent uv CUDA wheels ship their CUDA 13 runtime here. Some pod images expose
+# CUDA 12 system libraries first, so make the wheel's matching runtime visible.
+for cuda_runtime in /usr/local/lib/python*/dist-packages/nvidia/cu13/lib; do
+  [[ -d "\$cuda_runtime" ]] && export LD_LIBRARY_PATH="\$cuda_runtime:\${LD_LIBRARY_PATH:-}"
+done
+exec "$VLLM_BIN" serve "$MODEL" \\
+  --host 127.0.0.1 --port "$PORT" \\
+  --gpu-memory-utilization 0.90 --max-model-len 32768 \\
+  --kv-cache-dtype fp8 --enable-prefix-caching \\
+  --speculative-config '{"method":"qwen3_5_mtp","num_speculative_tokens":$SPEC_TOKENS}'
+EOF
+chmod 700 "$STACK_DIR/start.sh"
+nohup "$STACK_DIR/start.sh" >"$STACK_DIR/vllm.log" 2>&1 &
+echo "vLLM is starting on http://127.0.0.1:$PORT (log: $STACK_DIR/vllm.log)"
