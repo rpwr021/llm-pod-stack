@@ -38,9 +38,10 @@ set -euo pipefail
 export HF_XET_HIGH_PERFORMANCE=1
 export HF_HOME="$HF_HOME"
 export HF_XET_CACHE="$HF_XET_CACHE"
-# Recent uv CUDA wheels ship their CUDA 13 runtime here. Some pod images expose
-# CUDA 12 system libraries first, so make the wheel's matching runtime visible.
-for cuda_runtime in /usr/local/lib/python*/dist-packages/nvidia/cu13/lib; do
+# uv distributes the CUDA runtime across package-specific directories. Pod
+# images can otherwise resolve an older system NVRTC first (which lacks SM120
+# support on RTX 50-series GPUs), so put every matching wheel directory first.
+for cuda_runtime in /usr/local/lib/python*/dist-packages/nvidia/*/lib /usr/local/lib/python*/dist-packages/nvidia/cu13/lib; do
   [[ -d "\$cuda_runtime" ]] && export LD_LIBRARY_PATH="\$cuda_runtime:\${LD_LIBRARY_PATH:-}"
 done
 exec "$VLLM_BIN" serve "$MODEL" \\
